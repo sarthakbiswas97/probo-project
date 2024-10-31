@@ -192,10 +192,11 @@ app.get("/balance/stock/:userId", async (req, res) => {
     try {
         let data = await promisified
         data = JSON.parse(data)
+        console.log("data during the testing phase is ", JSON.parse(data.msg))
         if (data.error) {
             res.status(404).json({ msg: data.msg });
         } else {
-            res.status(200).json({ msg: data.msg });
+            res.status(200).json({ msg: JSON.parse(JSON.stringify(data.msg)) });
         }
     } catch (e) {
         res.status(500).json({ error: e })
@@ -226,6 +227,7 @@ app.post("/onramp/inr", async (req, res) => {
 
 app.post("/order/buy", async (req, res) => {
     const { userId, stockSymbol, quantity, price, stockType } = req.body;
+    console.log(req.body);
     const uid = uuidv4();
     const promisified = handlePubSubWithTimeout(uid);
     await queueTask({
@@ -239,6 +241,7 @@ app.post("/order/buy", async (req, res) => {
         if (data.error) {
             res.status(404).json({ msg: data.msg });
         } else {
+            console.log({ msg: JSON.parse(data.msg) });
             res.status(200).json({ msg: JSON.parse(data.msg) });
         }
     } catch (e) {
@@ -259,14 +262,38 @@ app.post("/order/sell", async (req, res) => {
         let data = await promisified
         data = JSON.parse(data)
         if (data.error) {
+            console.log("error here", data.error);
             res.status(404).json({ msg: data.msg });
         } else {
+            console.log(" here");
             res.status(200).json({ msg: data.msg });
         }
     } catch (e) {
         res.status(500).json({ error: e })
     }
 });
+
+app.post("/trade/mint", async (req, res) => {
+    const { userId, stockSymbol, quantity } = req.body
+    const uid = uuidv4();
+    const promisified = handlePubSubWithTimeout(uid);
+    await queueTask({
+        type: 'mint',
+        data: { userId, stockSymbol, quantity },
+        uid: uid
+    });
+    try {
+        let data = await promisified
+        data = JSON.parse(data)
+        if (data.error) {
+            res.status(404).json({ msg: data.msg });
+        } else {
+            res.status(200).json({ msg: JSON.parse(data.msg) });
+        }
+    } catch (e) {
+        res.status(500).json({ error: e })
+    }
+})
 
 app.post("/reset", async (req, res) => {
     const uid = uuidv4();
